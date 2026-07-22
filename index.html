@@ -21,7 +21,10 @@
             overflow: hidden;
             font-family: 'Nunito', sans-serif;
             background: linear-gradient(135deg, #ffd6ea, #ffe7c7, #e4dcff);
-            height: 100vh;
+            height: 100dvh;
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
         }
 
         .screen {
@@ -45,6 +48,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            padding: 16px;
 
             background:
                 radial-gradient(circle at top, #fff8fd, #ffe1ef, #ffd9c8);
@@ -54,17 +58,21 @@
         h1 {
 
             font-family: Pacifico;
-            font-size: 48px;
+            font-size: clamp(28px, 6vw, 48px);
             color: #ff4f8b;
-            margin-bottom: 10px;
+            margin-bottom: clamp(4px, 1.5vh, 10px);
+            text-align: center;
+            padding: 0 16px;
 
         }
 
         .subtitle {
 
-            font-size: 22px;
-            margin-bottom: 30px;
+            font-size: clamp(16px, 3vw, 22px);
+            margin-bottom: clamp(12px, 3vh, 30px);
             color: #6b4b63;
+            text-align: center;
+            padding: 0 16px;
 
         }
 
@@ -73,8 +81,10 @@
             position: relative;
             width: 640px;
             height: 640px;
+            max-width: calc(100vw - 32px);
+            max-height: calc(100vw - 32px);
             background: white;
-            border-radius: 30px;
+            border-radius: clamp(16px, 4vw, 30px);
 
             box-shadow:
                 0 20px 50px rgba(0, 0, 0, .15);
@@ -86,13 +96,15 @@
         canvas {
 
             display: block;
+            width: 100%;
+            height: 100%;
 
         }
 
         #gameInfo {
 
-            margin-top: 25px;
-            font-size: 20px;
+            margin-top: clamp(12px, 2.5vh, 25px);
+            font-size: clamp(14px, 2.5vw, 20px);
 
         }
 
@@ -102,6 +114,8 @@
             align-items: center;
             justify-content: center;
             flex-direction: column;
+            padding: 24px 16px;
+            overflow-y: auto;
 
             background:
                 linear-gradient(180deg, #fff8fc, #ffe0ef, #ffe8d0);
@@ -110,7 +124,7 @@
 
         .bigCake {
 
-            width: 260px;
+            width: min(260px, 50vw);
             animation: float 3s ease-in-out infinite;
             filter: drop-shadow(0 20px 30px rgba(0, 0, 0, .2));
         }
@@ -133,24 +147,25 @@
 
         .title {
 
-            font-size: 70px;
+            font-size: clamp(32px, 8vw, 70px);
             font-family: Pacifico;
-            margin-top: 30px;
+            margin-top: clamp(12px, 3vh, 30px);
             color: #ff4a88;
 
             text-align: center;
+            padding: 0 16px;
 
         }
 
         .message {
 
             width: 900px;
-            max-width: 90%;
+            max-width: calc(100vw - 40px);
 
-            margin-top: 30px;
+            margin-top: clamp(12px, 2vh, 30px);
 
-            font-size: 28px;
-            line-height: 1.7;
+            font-size: clamp(16px, 3.5vw, 28px);
+            line-height: 1.6;
             text-align: center;
 
             color: #5b4d58;
@@ -159,9 +174,9 @@
 
         button {
 
-            margin-top: 50px;
+            margin-top: clamp(24px, 4vh, 50px);
 
-            padding: 18px 42px;
+            padding: clamp(14px, 2.5vw, 18px) clamp(28px, 5vw, 42px);
 
             border: none;
 
@@ -171,7 +186,7 @@
 
             color: white;
 
-            font-size: 24px;
+            font-size: clamp(18px, 3vw, 24px);
 
             cursor: pointer;
 
@@ -202,6 +217,60 @@
             pointer-events: none;
 
         }
+
+        /* ── Mobile / small-screen tweaks ── */
+
+        @media (max-width: 480px) {
+            body {
+                height: 100dvh;
+            }
+            #gameScreen {
+                padding: 8px;
+            }
+            #finishScreen {
+                padding: 16px 12px;
+            }
+            .message {
+                max-width: calc(100vw - 24px);
+            }
+        }
+
+        @media (max-height: 500px) and (orientation: landscape) {
+            #game {
+                max-width: min(320px, calc(100vw - 16px));
+                max-height: min(320px, calc(100vw - 16px));
+                border-radius: 12px;
+            }
+            h1 {
+                font-size: clamp(18px, 4vw, 28px);
+                margin-bottom: 2px;
+            }
+            .subtitle {
+                font-size: clamp(12px, 2.5vw, 16px);
+                margin-bottom: 6px;
+            }
+            #gameInfo {
+                font-size: clamp(11px, 2vw, 14px);
+                margin-top: 6px;
+            }
+            .bigCake {
+                width: min(120px, 30vw);
+            }
+            .title {
+                font-size: clamp(20px, 5vw, 36px);
+                margin-top: 6px;
+            }
+            .message {
+                font-size: clamp(12px, 2.5vw, 16px);
+                margin-top: 6px;
+                max-width: calc(100vw - 32px);
+            }
+            button {
+                font-size: clamp(14px, 2.5vw, 18px);
+                padding: 10px 20px;
+                margin-top: 12px;
+            }
+        }
     </style>
 </head>
 
@@ -226,7 +295,7 @@
 
         <div id="gameInfo">
 
-            ⬅️➡️⬆️⬇️ Управление стрелками
+            ⬅️➡️⬆️⬇️ Стрелки · 👆 Свайп
 
         </div>
 
@@ -382,6 +451,34 @@ pointer-events:none;
         corgi.onload = render;
 
         window.addEventListener("keydown", move);
+
+        // ── Touch / swipe controls for mobile ──
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        canvas.addEventListener("touchstart", (e) => {
+            const t = e.touches[0];
+            touchStartX = t.clientX;
+            touchStartY = t.clientY;
+        }, { passive: true });
+
+        canvas.addEventListener("touchend", (e) => {
+            const t = e.changedTouches[0];
+            const dx = t.clientX - touchStartX;
+            const dy = t.clientY - touchStartY;
+            const absDx = Math.abs(dx);
+            const absDy = Math.abs(dy);
+            const minSwipe = 20;
+
+            if (absDx < minSwipe && absDy < minSwipe) return;
+
+            const key =
+                absDx > absDy
+                    ? (dx > 0 ? "ArrowRight" : "ArrowLeft")
+                    : (dy > 0 ? "ArrowDown" : "ArrowUp");
+
+            move({ key, preventDefault: () => {} });
+        }, { passive: true });
 
         function move(e) {
 
