@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>С Днем рождения, Анастасия ❤️</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Nunito:wght@400;700;900&display=swap"
+        rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #ffd6ea, #ffe7c7, #e4dcff);
+            height: 100vh;
+        }
+
+        .screen {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            transition: .9s;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(.95);
+        }
+
+        #gameScreen {
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+
+            background:
+                radial-gradient(circle at top, #fff8fd, #ffe1ef, #ffd9c8);
+
+        }
+
+        h1 {
+
+            font-family: Pacifico;
+            font-size: 48px;
+            color: #ff4f8b;
+            margin-bottom: 10px;
+
+        }
+
+        .subtitle {
+
+            font-size: 22px;
+            margin-bottom: 30px;
+            color: #6b4b63;
+
+        }
+
+        #game {
+
+            position: relative;
+            width: 640px;
+            height: 640px;
+            background: white;
+            border-radius: 30px;
+
+            box-shadow:
+                0 20px 50px rgba(0, 0, 0, .15);
+
+            overflow: hidden;
+
+        }
+
+        canvas {
+
+            display: block;
+
+        }
+
+        #gameInfo {
+
+            margin-top: 25px;
+            font-size: 20px;
+
+        }
+
+        #finishScreen {
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+
+            background:
+                linear-gradient(180deg, #fff8fc, #ffe0ef, #ffe8d0);
+
+        }
+
+        .bigCake {
+
+            width: 260px;
+            animation: float 3s ease-in-out infinite;
+            filter: drop-shadow(0 20px 30px rgba(0, 0, 0, .2));
+        }
+
+        @keyframes float {
+
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+
+        }
+
+        .title {
+
+            font-size: 70px;
+            font-family: Pacifico;
+            margin-top: 30px;
+            color: #ff4a88;
+
+            text-align: center;
+
+        }
+
+        .message {
+
+            width: 900px;
+            max-width: 90%;
+
+            margin-top: 30px;
+
+            font-size: 28px;
+            line-height: 1.7;
+            text-align: center;
+
+            color: #5b4d58;
+
+        }
+
+        button {
+
+            margin-top: 50px;
+
+            padding: 18px 42px;
+
+            border: none;
+
+            border-radius: 50px;
+
+            background: #ff4f8b;
+
+            color: white;
+
+            font-size: 24px;
+
+            cursor: pointer;
+
+            transition: .3s;
+
+            box-shadow: 0 15px 35px rgba(255, 79, 139, .4);
+
+        }
+
+        button:hover {
+
+            transform: scale(1.05);
+
+        }
+
+        .particle {
+
+            position: absolute;
+
+            width: 10px;
+
+            height: 10px;
+
+            background: pink;
+
+            border-radius: 50%;
+
+            pointer-events: none;
+
+        }
+    </style>
+</head>
+
+<body>
+
+    <section id="gameScreen" class="screen">
+
+        <h1>Помоги Кепчуку!</h1>
+
+        <div class="subtitle">
+
+            Проведи корги к праздничному торту 🎂
+
+        </div>
+
+        <div id="game">
+
+            <canvas id="canvas" width="640" height="640">
+            </canvas>
+
+        </div>
+
+        <div id="gameInfo">
+
+            ⬅️➡️⬆️⬇️ Управление стрелками
+
+        </div>
+
+    </section>
+
+    <section id="finishScreen" class="screen hidden">
+        <img class="bigCake" id="cakeBig" src="assets/cake.png">
+        <div class="title">
+            С Днём рождения,<br>
+            Анастасия ❤️
+        </div>
+        <div class="message">
+            Пусть каждый день будет как день рождения!,
+            Чтобы был наполнен улыбками, вдохновением и теплом.
+            Пусть мечты исполняются, а рядом всегда будут люди,
+            которые делают тебя счастливой.
+            Чтобы больше не приходилось работать на галере, чтобы были деньги
+            и чтобы Даня разбогател и ты могла больше не работать!
+        </div>
+        <button id="fireworkButton">
+            🎆 Запустить салют
+        </button>
+        <canvas id="fireworks" style="
+position:absolute;
+left:0;
+top:0;
+pointer-events:none;
+">
+        </canvas>
+
+    </section>
+
+    <script>
+
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        const TILE = 64;
+
+        const ROWS = 10;
+        const COLS = 10;
+
+        const maze = [
+
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+            [1, 0, 1, 1, 1, 0, 1, 0, 1, 1],
+            [1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+            [1, 1, 1, 0, 1, 1, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+            [1, 0, 1, 1, 1, 1, 0, 1, 0, 1],
+            [1, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+            [1, 0, 1, 1, 0, 0, 0, 1, 2, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+
+        ];
+
+        const player = {
+
+            x: 1,
+            y: 1
+
+        };
+
+        const corgi = new Image();
+        const cake = new Image();
+
+        corgi.src = "assets/corgi.png";
+        cake.src = "assets/cake.png";
+        const wallColor = "#ff9cc3";
+        const floorColor = "#fffdfd";
+
+        function drawMaze() {
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let y = 0; y < ROWS; y++) {
+
+                for (let x = 0; x < COLS; x++) {
+
+                    const px = x * TILE;
+                    const py = y * TILE;
+
+                    if (maze[y][x] === 1) {
+
+                        ctx.fillStyle = wallColor;
+                        ctx.fillRect(px, py, TILE, TILE);
+
+                        ctx.fillStyle = "rgba(255,255,255,.35)";
+                        ctx.fillRect(px + 6, py + 6, TILE - 12, 10);
+
+                    } else {
+
+                        ctx.fillStyle = floorColor;
+                        ctx.fillRect(px, py, TILE, TILE);
+
+                        ctx.strokeStyle = "#ffe5ef";
+                        ctx.strokeRect(px, py, TILE, TILE);
+
+                    }
+
+                    if (maze[y][x] === 2) {
+
+                        ctx.save();
+
+                        const s = 54 + Math.sin(Date.now() / 180) * 3;
+
+                        ctx.drawImage(
+                            cake,
+                            px + (TILE - s) / 2,
+                            py + (TILE - s) / 2,
+                            s,
+                            s
+                        );
+
+                        ctx.restore();
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        function drawPlayer() {
+
+            ctx.save();
+
+            const bounce = Math.sin(Date.now() / 120) * 2;
+
+            ctx.drawImage(
+                corgi,
+                player.x * TILE + 6,
+                player.y * TILE + 6 + bounce,
+                TILE - 12,
+                TILE - 12
+            );
+
+            ctx.restore();
+
+        }
+
+        function render() {
+
+            drawMaze();
+            drawPlayer();
+
+            requestAnimationFrame(render);
+
+        }
+
+        corgi.onload = render;
+
+        window.addEventListener("keydown", move);
+
+        function move(e) {
+
+            let nx = player.x;
+            let ny = player.y;
+
+            switch (e.key) {
+
+                case "ArrowLeft":
+                    nx--;
+                    break;
+
+                case "ArrowRight":
+                    nx++;
+                    break;
+
+                case "ArrowUp":
+                    ny--;
+                    break;
+
+                case "ArrowDown":
+                    ny++;
+                    break;
+
+                default:
+                    return;
+
+            }
+
+            e.preventDefault();
+
+            if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS) return;
+
+            if (maze[ny][nx] === 1) return;
+
+            player.x = nx;
+            player.y = ny;
+
+            if (maze[ny][nx] === 2) {
+
+                victory();
+
+            }
+
+        }
+        function confetti() {
+
+            for (let i = 0; i < 180; i++) {
+
+                const d = document.createElement("div");
+
+                d.className = "particle";
+
+                d.style.left = Math.random() * window.innerWidth + "px";
+                d.style.top = "-20px";
+
+                d.style.background =
+                    `hsl(${Math.random() * 360},100%,65%)`;
+
+                d.style.width =
+                    d.style.height =
+                    6 + Math.random() * 12 + "px";
+
+                document.body.appendChild(d);
+
+                const x = (Math.random() - .5) * 600;
+                const y = window.innerHeight + 300;
+
+                d.animate([
+
+                    {
+                        transform: "translate(0,0) rotate(0deg)"
+                    },
+
+                    {
+                        transform: `translate(${x}px,${y}px) rotate(${720 + Math.random() * 720}deg)`
+                    }
+
+                ], {
+
+                    duration: 2500 + Math.random() * 1500,
+                    easing: "cubic-bezier(.2,.8,.2,1)"
+
+                });
+
+                setTimeout(() => d.remove(), 4200);
+
+            }
+
+        }
+
+        function victory() {
+
+            window.removeEventListener("keydown", move);
+
+            confetti();
+
+            setTimeout(() => {
+
+                document
+                    .getElementById("gameScreen")
+                    .classList
+                    .add("hidden");
+
+                document
+                    .getElementById("finishScreen")
+                    .classList
+                    .remove("hidden");
+
+                resizeFireworks();
+
+            }, 1800);
+
+        }
+        const fw = document.getElementById("fireworks");
+        const fctx = fw.getContext("2d");
+
+        let rockets = [];
+
+        function resizeFireworks() {
+
+            fw.width = window.innerWidth;
+            fw.height = window.innerHeight;
+
+        }
+
+        window.addEventListener("resize", resizeFireworks);
+
+        class Rocket {
+
+            constructor() {
+
+                this.x = Math.random() * fw.width;
+                this.y = fw.height + 20;
+
+                this.tx = Math.random() * fw.width;
+                this.ty = 80 + Math.random() * fw.height * .5;
+
+                this.color = `hsl(${Math.random() * 360},100%,60%)`;
+
+                this.done = false;
+
+            }
+
+            update() {
+
+                this.x += (this.tx - this.x) * .05;
+                this.y += (this.ty - this.y) * .05;
+
+                if (Math.abs(this.y - this.ty) < 5) {
+
+                    this.done = true;
+
+                    explode(this.tx, this.ty, this.color);
+
+                }
+
+            }
+
+            draw() {
+
+                fctx.fillStyle = this.color;
+
+                fctx.beginPath();
+
+                fctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+
+                fctx.fill();
+
+            }
+
+        }
+
+        const sparks = [];
+
+        function explode(x, y, color) {
+
+            for (let i = 0; i < 80; i++) {
+
+                sparks.push({
+
+                    x,
+                    y,
+
+                    dx: (Math.random() - .5) * 10,
+                    dy: (Math.random() - .5) * 10,
+
+                    life: 80,
+
+                    color
+
+                });
+
+            }
+
+        }
+
+        function fireLoop() {
+
+            fctx.clearRect(0, 0, fw.width, fw.height);
+
+            rockets.forEach(r => {
+
+                r.update();
+                r.draw();
+
+            });
+
+            rockets = rockets.filter(r => !r.done);
+
+            sparks.forEach(s => {
+
+                s.x += s.dx;
+                s.y += s.dy;
+
+                s.dy += 0.05;
+
+                s.life--;
+
+                fctx.globalAlpha = s.life / 80;
+
+                fctx.fillStyle = s.color;
+
+                fctx.beginPath();
+                fctx.arc(s.x, s.y, 2, 0, Math.PI * 2);
+                fctx.fill();
+
+            });
+
+            fctx.globalAlpha = 1;
+
+            for (let i = sparks.length - 1; i >= 0; i--) {
+
+                if (sparks[i].life <= 0)
+                    sparks.splice(i, 1);
+
+            }
+
+            requestAnimationFrame(fireLoop);
+
+        }
+
+        fireLoop();
+
+        document
+            .getElementById("fireworkButton")
+            .onclick = () => {
+
+                setInterval(() => {
+
+                    rockets.push(new Rocket());
+
+                }, 500);
+
+            };
+
+        resizeFireworks();
+
+    </script>
+
+</body>
+
+</html>
