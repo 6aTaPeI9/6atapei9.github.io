@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Поможем Виолетте собрать подарок?</title>
+    <meta name="description" content="Маленькая праздничная игра: собери подарок из деталей и загляни внутрь.">
+    <meta name="theme-color" content="#fff7f2">
+    <meta name="color-scheme" content="light">
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20x='6'%20y='12'%20width='20'%20height='14'%20rx='3'%20fill='%23e9719a'/%3E%3Crect%20x='4'%20y='8'%20width='24'%20height='6'%20rx='3'%20fill='%23f6adc7'/%3E%3Crect%20x='14'%20y='8'%20width='4'%20height='18'%20fill='%238b7bb8'/%3E%3C/svg%3E">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&amp;family=Yeseva+One&amp;display=swap">
+
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/game.css">
+</head>
+
+<body>
+    <div class="page" id="page">
+        <header class="page__header">
+            <h1 class="page__title">Поможем Виолетте собрать подарок?</h1>
+            <p class="page__subtitle">Кажется, внутри тебя кое-что ждёт…</p>
+        </header>
+
+        <main class="game" id="game">
+            <div class="progress">
+                <span class="sr-only" id="progressStatus" role="status" aria-live="polite">Собрано 0 из 5</span>
+                <ul class="progress__dots" id="progressDots" aria-hidden="true"></ul>
+                <span class="progress__count" id="progressCount" aria-hidden="true">0/5</span>
+            </div>
+
+            <div class="board" id="board" data-board>
+                <div class="board__scene" data-scene></div>
+                <div class="board__pieces" data-pieces></div>
+
+                <div class="completion" id="completion" aria-hidden="true">
+                    <p class="completion__sparkle" aria-hidden="true">✨</p>
+                    <h2 class="completion__title">Получилось! <span aria-hidden="true">🎁</span></h2>
+                    <p class="completion__text">Кажется, внутри кое-что для тебя…</p>
+                    <a class="btn btn--primary completion__cta" data-nav href="/ellie/congratulations">
+                        <span>Открыть подарок</span>
+                        <span class="btn__arrow" aria-hidden="true">→</span>
+                    </a>
+                </div>
+            </div>
+
+            <p class="game__hint" id="hint">Перетащи детали на подарок <span aria-hidden="true">✨</span></p>
+        </main>
+    </div>
+
+    <div class="veil" aria-hidden="true"></div>
+
+    <script src="js/game/config.js"></script>
+    <script src="js/game/motion.js"></script>
+    <script src="js/game/art.js"></script>
+    <script src="js/game/fx.js"></script>
+    <script src="js/game/dnd.js"></script>
+    <script src="js/game/game.js"></script>
+    <script src="js/game/main.js"></script>
+</body>
+
+</html>

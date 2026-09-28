@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="utf-8">
+  <title>Проверка ввода: Собери подарок</title>
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/game.css">
+  <style>
+    #results {
+      position: relative;
+      z-index: 200;
+      margin: 0;
+      padding: 12px;
+      background: #14100f;
+      color: #f4f4f4;
+      font: 12px/1.6 ui-monospace, Consolas, monospace;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+
+<body>
+  <!--
+    Ручная проверка игровой страницы в браузере.
+
+    Запуск: из корня проекта `python -m http.server 8000`,
+    затем открыть /ellie/tests/input-check.html?w=390 (или другой ширины).
+    В конце отчёта должно быть столько же pass, сколько проверок, и 0 fail.
+
+    Проверяется то, что не видно по коду: попадают ли детали под указатель
+    (pointerdown уходит в элемент, который браузер отдаёт по координатам,
+    как при настоящем вводе) и читается ли подсветка зон на светлом фоне.
+  -->
+  <div id="mount"></div>
+  <pre id="results">RESULTS-START
+running…
+RESULTS-END</pre>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const width = parseInt(params.get('w') || '390', 10);
+    const motion = params.get('motion') === 'reduced' ? 'reduced' : 'full';
+    const mount = document.getElementById('mount');
+    mount.style.width = Math.min(width, window.innerWidth) + 'px';
+
+    const lines = [];
+    const errors = [];
+    const log = (ok, name, extra) => {
+      lines.push((ok ? 'PASS ' : 'FAIL ') + name + (extra ? ' :: ' + extra : ''));
+      render();
+    };
+
+    function render() {
+      document.getElementById('results').textContent = 'RESULTS-START\nw=' + width + 'px motion=' + motion + '\n' +
+        lines.join('\n') + '\nERRORS: ' + (errors.length ? errors.join(' | ') : 'none') + '\nRESULTS-END';
+    }
+
+    window.addEventListener('error', e => { errors.push('error: ' + e.message); render(); });
+    window.addEventListener('unhandledrejection', e => { errors.push('rejection: ' + (e.reason && e.reason.message || e.reason)); render(); });
+    const nativeError = console.error;
+    console.error = function () { errors.push('console.error: ' + [...arguments].join(' ')); render(); nativeError.apply(console, arguments); };
+
+    const delay = ms => new Promise(r => setTimeout(r, ms));
+
+    function pointerEvent(type, x, y, pointerType) {
+      return new PointerEvent(type, {
+        pointerId: pointerType === 'mouse' ? 3 : 7,
+        pointerType: pointerType || 'touch',
+        isPrimary: true,
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+        button: 0,
+        buttons: type === 'pointerup' ? 0 : 1
+      });
+    }
+
+    const byId = id => document.querySelector('.piece[data-piece="' + id + '"]');
+    const zoneOf = id => document.querySelector('.zone[data-zone="' + id + '"]');
+    const centerOf = el => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+    const progressText = () => document.getElementById('progressCount').textContent;
+    const placedCount = () => document.querySelectorAll('.piece.is-placed').length;
+    const placedIds = () => [...document.querySelectorAll('.piece.is-placed')].map(p => p.dataset.piece);
+    const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+    const round = v => Math.round(v * 10) / 10;
+    const describe = el => el ? (el.className || el.tagName) : 'null';
+    const rgb = value => (value.match(/[\d.]+/g) || []).map(Number);
+
+    /* В headless-браузере кадры анимации не крутятся, поэтому rAF
+       подменяется таймером: сама логика игры от этого не зависит. */
+    window.requestAnimationFrame = cb => setTimeout(() => cb(performance.now()), 16);
+    window.cancelAnimationFrame = id => clearTimeout(id);
+
+    if (motion === 'full') {
+      const nativeMatchMedia = window.matchMedia.bind(window);
+      window.matchMedia = function (query) {
+        if (/prefers-reduced-motion/.test(query)) {
+          return { matches: false, media: query, addEventListener() { }, removeEventListener() { }, addListener() { }, removeListener() { } };
+        }
+        return nativeMatchMedia(query);
+      };
+    }
+
+    async function loadApp() {
+      const doc = new DOMParser().parseFromString(await (await fetch('/ellie/index.html')).text(), 'text/html');
+      [...doc.body.children].forEach(node => {
+        if (node.tagName !== 'SCRIPT') mount.appendChild(document.importNode(node, true));
+      });
+
+      for (const source of [...doc.body.querySelectorAll('script[src]')]) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = new URL(source.getAttribute('src'), location.origin + '/ellie/').pathname;
+          script.onload = resolve;
+          script.onerror = () => reject(new Error('script failed: ' + script.src));
+          document.body.appendChild(script);
+        });
+      }
+    }
+
+    async function dragTo(piece, target, zone, pointerType) {
+      const start = centerOf(piece);
+      const downTarget = document.elementFromPoint(start.x, start.y) || document.body;
+      downTarget.dispatchEvent(pointerEvent('pointerdown', start.x, start.y, pointerType));
+      await delay(30);
+
+      for (let i = 1; i <= 6; i++) {
+        piece.dispatchEvent(pointerEvent('pointermove',
+          start.x + (target.x - start.x) * i / 6,
+          start.y + (target.y - start.y) * i / 6, pointerType));
+        await delay(30);
+      }
+
+      const mid = {
+        downTarget: describe(downTarget),
+        dragging: piece.classList.contains('is-dragging'),
+        transform: piece.style.transform,
+        glow: !!zone && zone.classList.contains('is-active')
+      };
+
+      piece.dispatchEvent(pointerEvent('pointerup', target.x, target.y, pointerType));
+      await delay(90);
+      return mid;
+    }
+
+    (async function run() {
+      try {
+        await loadApp();
+        await delay(80);
+
+        const board = document.querySelector('[data-board]');
+        const boardRect = board.getBoundingClientRect();
+        const pieces = [...document.querySelectorAll('.piece')];
+        const zones = [...document.querySelectorAll('.zone')];
+        const ids = pieces.map(p => p.dataset.piece);
+        const total = ids.length;
+
+        log(total >= 8, 'на подарке не меньше 8 деталей', 'деталей: ' + total);
+        log(pieces.length === zones.length, 'у каждой детали есть своя зона', pieces.length + '/' + zones.length);
+        log(ids.every(id => zoneOf(id)), 'у каждой детали зона находится по id', ids.join(','));
+        log(pieces.every(p => p.hasAttribute('aria-label')), 'у деталей есть aria-label');
+        log(Math.abs(boardRect.width / boardRect.height - 360 / 440) < .01, 'доска держит пропорцию 360/440',
+          round(boardRect.width) + 'x' + round(boardRect.height));
+        log(pieces.every(p => getComputedStyle(p).pointerEvents === 'auto'), 'детали принимают указатель');
+        log(getComputedStyle(document.querySelector('.board__pieces')).pointerEvents === 'none',
+          'пустые места слоя деталей пропускают клики');
+
+        const notHittable = ids.filter(id => {
+          const piece = byId(id);
+          const centre = centerOf(piece);
+          const hit = document.elementFromPoint(centre.x, centre.y);
+          return !(hit && (hit === piece || piece.contains(hit)));
+        });
+        log(notHittable.length === 0, 'каждая деталь находится под курсором в своём центре',
+          notHittable.length ? notHittable.join(',') + ' заблокированы' : 'все ' + total);
+
+        log(document.documentElement.scrollWidth <= window.innerWidth + 1, 'нет горизонтальной прокрутки',
+          document.documentElement.scrollWidth + ' vs ' + window.innerWidth);
+        log(document.getElementById('hint').textContent.indexOf('Перетащи') === 0, 'подсказка на месте');
+
+        /* Подсветка зон: по умолчанию не видна, в активном состоянии — контрастная. */
+        const probe = zoneOf('ribbon');
+        const idleFill = getComputedStyle(probe).fillOpacity;
+        const idleStroke = getComputedStyle(probe).strokeOpacity;
+        log(parseFloat(idleFill) === 0 && parseFloat(idleStroke) === 0,
+          'зона не видна, пока деталь не над ней', 'fill=' + idleFill + ' stroke=' + idleStroke);
+
+        const noTransition = document.createElement('style');
+        noTransition.textContent = '.zone{transition:none !important}';
+        document.head.appendChild(noTransition);
+        probe.classList.add('is-active');
+        const activeFill = getComputedStyle(probe).fillOpacity;
+        const activeStroke = getComputedStyle(probe).strokeOpacity;
+        const activeColour = getComputedStyle(probe).stroke;
+        probe.classList.remove('is-active');
+        const stroke = rgb(activeColour);
+        log(parseFloat(activeFill) >= .3 && parseFloat(activeStroke) >= .9,
+          'подсветка включается целиком', 'fill=' + activeFill + ' stroke=' + activeStroke);
+        log(stroke[1] < 150 && stroke[0] > 170, 'контур подсветки контрастный, а не светло-на-светлом',
+          activeColour);
+
+        /* Клавиатура: Enter ставит деталь без перетаскивания. */
+        const star = byId('star');
+        star.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+        await delay(750);
+        log(star.classList.contains('is-placed'), 'деталь ставится с клавиатуры');
+        log(progressText() === '1/' + total, 'прогресс после первой детали', progressText());
+        log(document.getElementById('progressStatus').textContent === 'Собрано 1 из ' + total,
+          'прогресс озвучивается', document.getElementById('progressStatus').textContent);
+        log(document.getElementById('hint').classList.contains('is-hidden'), 'подсказка скрылась после первого успеха');
+
+        /* Мышиный drag через хит-тест. */
+        const lid = byId('lid');
+        const lidZone = zoneOf('lid');
+        const before = lid.getBoundingClientRect().left;
+        const mid = await dragTo(lid, centerOf(lidZone), lidZone, 'mouse');
+        log(mid.dragging, 'мышью деталь берётся', 'pointerdown попал в: ' + mid.downTarget);
+        log(/scale\(1\.06\)/.test(mid.transform), 'деталь едет за указателем');
+        log(mid.glow, 'зона подсвечивается, когда деталь над ней');
+        await delay(750);
+        log(lid.classList.contains('is-placed'), 'бросок в зону ставит деталь');
+        log(dist(centerOf(lid), centerOf(lidZone)) < 3, 'деталь встаёт ровно в зону',
+          'промах ' + round(dist(centerOf(lid), centerOf(lidZone))) + 'px');
+        log(lid.getBoundingClientRect().left !== before, 'деталь действительно уехала');
+
+        /* Неправильный бросок — домой. */
+        const card = byId('card');
+        const cardHome = centerOf(card);
+        const wrong = await dragTo(card, { x: boardRect.left + boardRect.width * .95, y: boardRect.top + boardRect.height * .04 }, null, 'touch');
+        log(wrong.dragging, 'пальцем деталь берётся', 'pointerdown попал в: ' + wrong.downTarget);
+        await delay(750);
+        log(!card.classList.contains('is-placed') && dist(centerOf(card), cardHome) < 3,
+          'неправильный бросок возвращает деталь домой',
+          'промах ' + round(dist(centerOf(card), cardHome)) + 'px');
+
+        /* Тап без движения — подсказка. */
+        const tapPiece = ids.filter(id => placedIds().indexOf(id) === -1)[0];
+        const tapZone = zoneOf(tapPiece);
+        tapZone.classList.remove('is-pulsing');
+        const tapPoint = centerOf(byId(tapPiece));
+        (document.elementFromPoint(tapPoint.x, tapPoint.y) || document.body)
+          .dispatchEvent(pointerEvent('pointerdown', tapPoint.x, tapPoint.y, 'touch'));
+        await delay(30);
+        byId(tapPiece).dispatchEvent(pointerEvent('pointerup', tapPoint.x, tapPoint.y, 'touch'));
+        await delay(120);
+        log(tapZone.classList.contains('is-pulsing'), 'тап по детали подсвечивает её место', tapPiece);
+        log(!byId(tapPiece).classList.contains('is-dragging'), 'тап не оставляет деталь «в руке»');
+
+        /* Остальные детали — пальцем. */
+        for (const id of ids) {
+          if (placedIds().indexOf(id) !== -1) continue;
+          const piece = byId(id);
+          const zone = zoneOf(id);
+          await dragTo(piece, centerOf(zone), zone, 'touch');
+          await delay(700);
+          log(dist(centerOf(piece), centerOf(zone)) < 3, id + ' встала в свою зону',
+            'промах ' + round(dist(centerOf(piece), centerOf(zone))) + 'px');
+        }
+
+        log(placedCount() === total, 'все детали на месте', placedCount() + '/' + total);
+        log(progressText() === total + '/' + total, 'прогресс заполнен', progressText());
+
+        const lidCentre = centerOf(byId('lid'));
+        const placedHit = document.elementFromPoint(lidCentre.x, lidCentre.y);
+        log(!(placedHit && byId('lid').contains(placedHit)), 'поставленная деталь больше не ловит указатель',
+          describe(placedHit));
+
+        await delay(2000);
+        const completion = document.getElementById('completion');
+        log(completion.classList.contains('is-visible'), 'появилась финальная панель');
+        log(board.classList.contains('is-celebrating'), 'коробка празднует');
+        const cta = completion.querySelector('[data-nav]');
+        log(!!cta && cta.tagName === 'A' && cta.getAttribute('href') === '/ellie/congratulations',
+          'кнопка ведёт на /ellie/congratulations', cta ? cta.getAttribute('href') : 'missing');
+        log(document.activeElement === cta, 'фокус перешёл на кнопку');
+        log(getComputedStyle(cta).pointerEvents !== 'none', 'кнопка кликабельна');
+
+        board.style.width = '280px';
+        window.dispatchEvent(new Event('resize'));
+        await delay(400);
+        const drift = ids.map(id => dist(centerOf(byId(id)), centerOf(zoneOf(id))));
+        log(Math.max(...drift) < 3, 'после изменения размера детали остаются на местах',
+          'максимум ' + round(Math.max(...drift)) + 'px');
+        log(getComputedStyle(byId('lid')).pointerEvents === 'none', 'поставленные детали не принимают указатель');
+
+        log(errors.length === 0, 'в консоли нет ошибок');
+      } catch (error) {
+        log(false, 'проверка упала', error && (error.stack || error.message));
+      }
+      render();
+    })();
+  </script>
+</body>
+
+</html>

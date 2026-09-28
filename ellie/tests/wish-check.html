@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="utf-8">
+  <title>Проверка страницы поздравления</title>
+  <style>
+    body {
+      margin: 0;
+    }
+
+    #frame {
+      border: 0;
+      display: block;
+    }
+
+    #out {
+      margin: 0;
+      padding: 12px;
+      background: #14100f;
+      color: #f4f4f4;
+      font: 12px/1.6 ui-monospace, Consolas, monospace;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+
+<body>
+  <!--
+    Проверка страницы поздравления: грузится ли штрихкод, есть ли кириллица
+    в подключённых шрифтах, не вылезает ли карточка по ширине.
+
+    Запуск: из корня проекта `python -m http.server 8000`,
+    затем открыть /ellie/tests/wish-check.html?w=390.
+  -->
+  <iframe id="frame" title="wish page"></iframe>
+  <pre id="out">WSTART
+running
+WEND</pre>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const width = parseInt(params.get('w') || '390', 10);
+    const frame = document.getElementById('frame');
+    frame.style.width = width + 'px';
+    frame.style.height = Math.max(600, window.innerHeight - 220) + 'px';
+    frame.src = '/ellie/congratulations/';
+
+    const lines = [];
+    const out = document.getElementById('out');
+    const render = () => { out.textContent = 'WSTART\nscreen=' + width + '\n' + lines.join('\n') + '\nWEND'; };
+    const log = (ok, name, extra) => {
+      lines.push((ok ? 'PASS ' : 'FAIL ') + name + (extra ? ' :: ' + extra : ''));
+      render();
+    };
+
+    const delay = ms => new Promise(r => setTimeout(r, ms));
+
+    (async function run() {
+      try {
+        await new Promise(resolve => { frame.onload = resolve; });
+        const doc = frame.contentDocument;
+        const win = frame.contentWindow;
+
+        await delay(150);
+        try {
+          await doc.fonts.ready;
+        } catch (error) { /* старые браузеры */ }
+        await delay(300);
+
+        /* Штрихкод. */
+        const img = doc.querySelector('.gift__code img');
+        log(!!img, 'на странице есть картинка со штрихкодом');
+        log(!!img && !!img.getAttribute('alt'), 'у картинки есть alt', img ? img.getAttribute('alt') : '');
+        log(!!img && img.complete && img.naturalWidth > 0, 'картинка загрузилась',
+          img ? img.naturalWidth + 'x' + img.naturalHeight : 'нет');
+        log(!!img && img.naturalWidth === 1077 && img.naturalHeight === 576, 'это тот самый файл code.jpg');
+
+        const card = doc.querySelector('.wish__card');
+        const cardRect = card.getBoundingClientRect();
+        const imgRect = img.getBoundingClientRect();
+        log(imgRect.width > cardRect.width * .75, 'штрихкод показан крупно',
+          Math.round(imgRect.width) + 'px из ' + Math.round(cardRect.width) + 'px карточки');
+        log(Math.abs(imgRect.width / imgRect.height - 1077 / 576) < .05, 'пропорции картинки не искажены',
+          (imgRect.width / imgRect.height).toFixed(2) + ' против ' + (1077 / 576).toFixed(2));
+        log(!!doc.querySelector('.gift__code[href*="code.jpg"]'), 'по коду можно открыть картинку целиком');
+        log(!!doc.querySelector('a[download]'), 'есть ссылка «сохранить код»');
+
+        /* Шрифты и кириллица. */
+        const canvas = doc.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const cyr = 'Виолетта';
+        ctx.font = '40px monospace';
+        const fallback = ctx.measureText(cyr).width;
+
+        const families = [['Yeseva One', 400], ['Nunito', 700]];
+        for (const [family, weight] of families) {
+          ctx.font = weight + ' 40px "' + family + '", monospace';
+          const w = ctx.measureText(cyr).width;
+          log(Math.abs(w - fallback) > .5, 'шрифт ' + family + ' рисует кириллицу', 'ширина ' + w.toFixed(1) + 'px');
+        }
+
+        const titleFont = win.getComputedStyle(doc.querySelector('.wish__title')).fontFamily;
+        log(titleFont.indexOf('Yeseva One') !== -1, 'заголовок набран выбранным шрифтом', titleFont);
+
+        /* Раскладка. */
+        log(cardRect.width <= width + 1, 'карточка помещается по ширине',
+          Math.round(cardRect.width) + ' из ' + width);
+        log(doc.documentElement.scrollWidth <= frame.clientWidth + 1, 'нет горизонтальной прокрутки',
+          doc.documentElement.scrollWidth + ' vs ' + frame.clientWidth);
+        log(!!doc.querySelector('.wish__back[href$="index.html"]'), 'есть возврат к игре');
+        log(doc.querySelector('.wish__title').textContent.trim() === 'Виолетта', 'имя в заголовке',
+          doc.querySelector('.wish__title').textContent.trim());
+
+        /* Ссылка на пункт выдачи. */
+        const link = doc.querySelector('a[href^="https://www.ozon.ru"]');
+        log(!!link, 'есть ссылка на пункт выдачи', link ? link.getAttribute('href') : 'нет');
+        log(!!link && link.textContent.trim() === 'пункте выдачи', 'ссылка стоит на словах «пункте выдачи»',
+          link ? '"' + link.textContent.trim() + '"' : 'нет');
+        log(!!link && link.getAttribute('target') === '_blank' &&
+          (link.getAttribute('rel') || '').indexOf('noopener') !== -1,
+          'ссылка открывается в новой вкладке',
+          link ? link.getAttribute('target') + ' ' + link.getAttribute('rel') : 'нет');
+        log(!!link && !!link.closest('.gift__hint'), 'ссылка в тексте, а не в атрибуте');
+        log(!!link && link.getBoundingClientRect().width > 0 && link.getBoundingClientRect().width < cardRect.width,
+          'ссылка отрисована и не растянута на всю карточку',
+          link ? Math.round(link.getBoundingClientRect().width) + 'px' : 'нет');
+        log(!!win.BirthdayGame && !!win.BirthdayGame.fx, 'подключён модуль эффектов');
+
+        /* Эффекты не должны ломать страницу. */
+        let fxOk = true;
+        try {
+          win.BirthdayGame.fx.burst(cardRect.left + 10, cardRect.top + 10, { count: 2 });
+          win.BirthdayGame.fx.glyphs(cardRect.left + 10, cardRect.top + 10, { count: 1 });
+        } catch (error) {
+          fxOk = false;
+        }
+        log(fxOk, 'вызов эффектов не бросает ошибку');
+      } catch (error) {
+        log(false, 'проверка упала', error && (error.stack || error.message));
+      }
+      render();
+    })();
+  </script>
+</body>
+
+</html>
