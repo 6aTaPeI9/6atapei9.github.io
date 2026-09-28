@@ -31,7 +31,7 @@
     в подключённых шрифтах, не вылезает ли карточка по ширине.
 
     Запуск: из корня проекта `python -m http.server 8000`,
-    затем открыть /tests/wish-check.html?w=390.
+    затем открыть /ellie/tests/wish-check.html?w=390.
   -->
   <iframe id="frame" title="wish page"></iframe>
   <pre id="out">WSTART
@@ -44,7 +44,7 @@ WEND</pre>
     const frame = document.getElementById('frame');
     frame.style.width = width + 'px';
     frame.style.height = Math.max(600, window.innerHeight - 220) + 'px';
-    frame.src = '/congratulations/';
+    frame.src = '/ellie/congratulations/';
 
     const lines = [];
     const out = document.getElementById('out');

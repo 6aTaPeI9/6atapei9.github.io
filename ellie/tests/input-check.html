@@ -25,7 +25,7 @@
     Ручная проверка игровой страницы в браузере.
 
     Запуск: из корня проекта `python -m http.server 8000`,
-    затем открыть /tests/input-check.html?w=390 (или другой ширины).
+    затем открыть /ellie/tests/input-check.html?w=390 (или другой ширины).
     В конце отчёта должно быть столько же pass, сколько проверок, и 0 fail.
 
     Проверяется то, что не видно по коду: попадают ли детали под указатель
@@ -104,7 +104,7 @@ RESULTS-END</pre>
     }
 
     async function loadApp() {
-      const doc = new DOMParser().parseFromString(await (await fetch('/index.html')).text(), 'text/html');
+      const doc = new DOMParser().parseFromString(await (await fetch('/ellie/index.html')).text(), 'text/html');
       [...doc.body.children].forEach(node => {
         if (node.tagName !== 'SCRIPT') mount.appendChild(document.importNode(node, true));
       });
@@ -112,7 +112,7 @@ RESULTS-END</pre>
       for (const source of [...doc.body.querySelectorAll('script[src]')]) {
         await new Promise((resolve, reject) => {
           const script = document.createElement('script');
-          script.src = new URL(source.getAttribute('src'), location.origin + '/').pathname;
+          script.src = new URL(source.getAttribute('src'), location.origin + '/ellie/').pathname;
           script.onload = resolve;
           script.onerror = () => reject(new Error('script failed: ' + script.src));
           document.body.appendChild(script);
@@ -272,8 +272,8 @@ RESULTS-END</pre>
         log(completion.classList.contains('is-visible'), 'появилась финальная панель');
         log(board.classList.contains('is-celebrating'), 'коробка празднует');
         const cta = completion.querySelector('[data-nav]');
-        log(!!cta && cta.tagName === 'A' && cta.getAttribute('href') === '/congratulations',
-          'кнопка ведёт на /congratulations', cta ? cta.getAttribute('href') : 'missing');
+        log(!!cta && cta.tagName === 'A' && cta.getAttribute('href') === '/ellie/congratulations',
+          'кнопка ведёт на /ellie/congratulations', cta ? cta.getAttribute('href') : 'missing');
         log(document.activeElement === cta, 'фокус перешёл на кнопку');
         log(getComputedStyle(cta).pointerEvents !== 'none', 'кнопка кликабельна');
 

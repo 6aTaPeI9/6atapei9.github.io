@@ -12,9 +12,10 @@
     if (!link) return;
 
     /* При открытии файла напрямую (file://) абсолютный маршрут не работает,
-       поэтому ведём на ту же страницу по относительному пути. */
+       поэтому ведём на ту же страницу по относительному пути внутри /ellie. */
     if (window.location.protocol === 'file:') {
-      link.setAttribute('href', App.config.route.gift.replace(/^\/+/, '').replace(/\/?$/, '/') + 'index.html');
+      var rel = App.config.route.gift.split(App.config.base + '/').pop();
+      link.setAttribute('href', rel.replace(/^\/+/, '').replace(/\/?$/, '/') + 'index.html');
     }
 
     link.addEventListener('click', function (event) {

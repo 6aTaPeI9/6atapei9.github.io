@@ -10,8 +10,12 @@ window.BirthdayGame = window.BirthdayGame || {};
   App.config = {
     board: { w: 360, h: 440 },
 
+    /* Обе страницы сайта лежат в подпапках (подарки разным людям),
+       поэтому маршруты задаются от корня сайта. */
+    base: '/ellie',
+
     /* Куда ведёт кнопка «Открыть подарок». */
-    route: { gift: '/congratulations' },
+    route: { gift: '/ellie/congratulations' },
 
     theme: {
       confetti: ['#f7a8c4', '#e9719a', '#c9a7e8', '#8b7bb8', '#f2c94c', '#f4b183', '#d9536f', '#9be2c6']
