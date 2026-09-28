@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>С днём рождения, Виолетта 🎀</title>
+    <meta name="description" content="Поздравление и подарок.">
+    <meta name="theme-color" content="#fff7f2">
+    <meta name="color-scheme" content="light">
+    <!-- Страница личная: не индексируем и не показываем в поиске. -->
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20x='6'%20y='12'%20width='20'%20height='14'%20rx='3'%20fill='%23e9719a'/%3E%3Crect%20x='4'%20y='8'%20width='24'%20height='6'%20rx='3'%20fill='%23f6adc7'/%3E%3Crect%20x='14'%20y='8'%20width='4'%20height='18'%20fill='%238b7bb8'/%3E%3C/svg%3E">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&amp;family=Yeseva+One&amp;display=swap">
+
+    <link rel="stylesheet" href="../css/base.css">
+    <link rel="stylesheet" href="../css/congratulations.css">
+</head>
+
+<body>
+    <main class="wish">
+        <article class="wish__card">
+            <p class="wish__eyebrow">С днём рождения</p>
+            <h1 class="wish__title">Виолетта</h1>
+
+            <p class="wish__text">
+                Пусть этот год будет легким и спокойным там, где это нужно.
+                Желаю закончить наконец универ и забыть про академ. Побывать в стране кошкодевочек и может быть
+                найти кошкомужчину. Не болеть. Совсем.
+            </p>
+
+            <section class="gift" aria-labelledby="giftTitle">
+                <h2 class="gift__title" id="giftTitle">Твой подарок</h2>
+                <p class="gift__hint">Он уже ждёт тебя на <a class="gift__link"
+                        href="https://www.ozon.ru/geo/kostroma/1250100/" target="_blank"
+                        rel="noopener noreferrer">пункте выдачи</a>. Прямо сейчас доехало 1 из 2 подарков. Второй
+                    будет сегодня, но попозже.</p>
+
+                <a class="gift__code" href="../code.jpg" target="_blank" rel="noopener">
+                    <img src="../code.jpg" width="1077" height="576" decoding="async"
+                        alt="Штрихкод для получения подарка на пункте выдачи">
+                </a>
+
+                <a class="gift__link" href="../code.jpg" download="code.jpg">открой код отдельным файлом</a>.
+            </section>
+
+            <a class="wish__back" href="../index.html">← Вернуться к игре</a>
+        </article>
+    </main>
+
+    <script src="../js/game/config.js"></script>
+    <script src="../js/game/motion.js"></script>
+    <script src="../js/game/fx.js"></script>
+    <script>
+        /* Немного конфетти на входе - тем же модулем, что и в игре.
+           При prefers-reduced-motion эффекты не запускаются. */
+        (function () {
+            function start() {
+                var card = document.querySelector('.wish__card');
+                if (!card || !window.BirthdayGame || !window.BirthdayGame.fx) return;
+
+                var box = card.getBoundingClientRect();
+                var fx = window.BirthdayGame.fx;
+                fx.burst(box.left + box.width * 0.5, box.top + box.height * 0.14, { count: 18, power: 1 });
+                fx.burst(box.left + box.width * 0.2, box.top + box.height * 0.26, { count: 10, power: .9, delay: 140 });
+                fx.burst(box.left + box.width * 0.8, box.top + box.height * 0.24, { count: 10, power: .9, delay: 260 });
+                fx.glyphs(box.left + box.width * 0.5, box.top + box.height * 0.3, { count: 5 });
+            }
+
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+            else start();
+        })();
+    </script>
+</body>
+
+</html>
